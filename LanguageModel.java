@@ -1,5 +1,8 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.Scanner;
 
 public class LanguageModel {
 
@@ -33,20 +36,82 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-		// Your code goes here
-	}
+		StringBuilder text = new StringBuilder();
+
+        try (Scanner sc = new Scanner(new File(fileName))) {
+            while (sc.hasNextLine()) {
+                text.append(sc.nextLine());
+            }
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("File not found: " + fileName);
+        }
+
+        // Not enough text to build any window->nextChar pairs
+        if (text.length() <= windowLength) {
+            return;
+        }
+
+        // for every window, count the char that follows it
+        for (int i = 0; i + windowLength < text.length(); i++) {
+            String window = text.substring(i, i + windowLength);
+            char nextChr = text.charAt(i + windowLength);
+
+            List lst = CharDataMap.get(window);
+            if (lst == null) {
+                lst = new List();
+                CharDataMap.put(window, lst);
+            }
+
+            lst.update(nextChr); // increments if exists, else adds to front
+        }
+    }
 
     // Computes and sets the probabilities (p and cp fields) of all the
-	// characters in the given list. */
+	// characters in the given list.
 	void calculateProbabilities(List probs) {				
-		// Your code goes here
-	}
+		
+        if (probs == null || probs.getSize() == 0) {
+        return;
+        }
+
+        CharData[] arr = probs.toArray();
+
+        int total = 0;
+        for (CharData cd : arr) {
+            total += cd.count;
+        }
+        if (total == 0) {
+            return;
+        }
+
+        double cumulative = 0.0;
+        for (CharData cd : arr) {
+            cd.p = (double) cd.count / total;
+            cumulative += cd.p;
+            cd.cp = cumulative;
+        }
+
+        arr[arr.length - 1].cp = 1.0;
+    }
 
     // Returns a random character from the given probabilities list.
 	char getRandomChar(List probs) {
-		// Your code goes here
-		return ' ';
-	}
+		
+        if (probs == null || probs.getSize() == 0) {
+        throw new IllegalArgumentException("Probability list is empty");
+        }
+
+        double r = randomGenerator.nextDouble();
+
+        CharData[] arr = probs.toArray();
+        for (CharData cd : arr) {
+            if (r <= cd.cp) {
+                return cd.chr;
+            }
+        }
+
+        return arr[arr.length - 1].chr;
+    }
 
     /**
 	 * Generates a random text, based on the probabilities that were learned during training. 
@@ -56,9 +121,33 @@ public class LanguageModel {
 	 * @return the generated text
 	 */
 	public String generate(String initialText, int textLength) {
-		// Your code goes here
-        return "";
-	}
+		StringBuilder result = new StringBuilder(initialText);
+
+        // If too short, cannot generate
+        if (initialText.length() < windowLength) {
+            return initialText;
+        }
+
+        while (result.length() < textLength) {
+            int start = result.length() - windowLength;
+            String window = result.substring(start, result.length());
+
+        // probabilities list
+        List probs = CharDataMap.get(window);
+        if (probs == null || probs.getSize() == 0) {
+            break; // cannot continue generation
+        }
+
+        // Compute probabilities
+        calculateProbabilities(probs);
+        char nextChar = getRandomChar(probs);
+
+        // Append to result
+        result.append(nextChar);
+    }
+
+        return result.toString();
+    }
 
     /** Returns a string representing the map of this language model. */
 	public String toString() {
@@ -69,8 +158,4 @@ public class LanguageModel {
 		}
 		return str.toString();
 	}
-
-    public static void main(String[] args) {
-		// Your code goes here
-    }
 }
