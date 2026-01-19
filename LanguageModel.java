@@ -39,8 +39,7 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-        
-        CharDataMap.clear();
+        CharDataMap.clear(); // important if train() called more than once
 
         String text;
         try {
@@ -49,11 +48,10 @@ public class LanguageModel {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
+        text = text.replace("\r\n", "\n");
         text = text.replaceAll("\\s+$", "");
 
-        if (text.length() <= windowLength) {
-            return;
-        }
+        if (text.length() <= windowLength) return;
 
         for (int i = 0; i + windowLength < text.length(); i++) {
             String window = text.substring(i, i + windowLength);
@@ -64,13 +62,40 @@ public class LanguageModel {
                 lst = new List();
                 CharDataMap.put(window, lst);
             }
-
             lst.update(nextChr);
         }
     }
 
+    // Computes and sets the probabilities (p and cp fields) of all the
+	// characters in the given list.
+	public void calculateProbabilities(List probs) {				
+		
+        if (probs == null || probs.getSize() == 0) {
+        return;
+        }
+
+        CharData[] arr = probs.toArray();
+
+        int total = 0;
+        for (CharData cd : arr) {
+            total += cd.count;
+        }
+        if (total == 0) {
+            return;
+        }
+
+        double cumulative = 0.0;
+        for (CharData cd : arr) {
+            cd.p = (double) cd.count / total;
+            cumulative += cd.p;
+            cd.cp = cumulative;
+        }
+
+        arr[arr.length - 1].cp = 1.0;
+    }
+
     // Returns a random character from the given probabilities list.
-	char getRandomChar(List probs) {
+	public char getRandomChar(List probs) {
 		
         if (probs == null || probs.getSize() == 0) {
         throw new IllegalArgumentException("Probability list is empty");
@@ -118,7 +143,7 @@ public class LanguageModel {
             result.append(nextChar);
         }
 
-        return result.toString();
+    return result.toString();
     }
 
     /** Returns a string representing the map of this language model. */
