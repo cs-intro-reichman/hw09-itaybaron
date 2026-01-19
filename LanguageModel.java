@@ -1,5 +1,11 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.Scanner;
 
 public class LanguageModel {
 
@@ -16,61 +22,96 @@ public class LanguageModel {
     /** Constructs a language model with the given window length and a given
      *  seed value. Generating texts from this model multiple times with the 
      *  same seed value will produce the same random texts. Good for debugging. */
-    public LanguageModel(int windowLength, int seed) {
+     public LanguageModel(int windowLength, int seed) {
         this.windowLength = windowLength;
         randomGenerator = new Random(seed);
-        CharDataMap = new HashMap<String, List>();
+        CharDataMap = new HashMap<>();
     }
 
-    /** Constructs a language model with the given window length.
-     * Generating texts from this model multiple times will produce
-     * different random texts. Good for production. */
     public LanguageModel(int windowLength) {
         this.windowLength = windowLength;
         randomGenerator = new Random();
-        CharDataMap = new HashMap<String, List>();
+        CharDataMap = new HashMap<>();
     }
 
-    /** Builds a language model from the text in the given file (the corpus). */
-	public void train(String fileName) {
-		// Your code goes here
-	}
+    public void train(String fileName) {
+        CharDataMap.clear();
 
-    // Computes and sets the probabilities (p and cp fields) of all the
-	// characters in the given list. */
-	void calculateProbabilities(List probs) {				
-		// Your code goes here
-	}
+        String text;
+        try {
+            text = Files.readString(Paths.get(fileName));
+        } catch (IOException e) {
+            throw new IllegalArgumentException("File not found: " + fileName);
+        }
 
-    // Returns a random character from the given probabilities list.
-	char getRandomChar(List probs) {
-		// Your code goes here
-		return ' ';
-	}
+        if (text.length() < windowLength + 1) return;
 
-    /**
-	 * Generates a random text, based on the probabilities that were learned during training. 
-	 * @param initialText - text to start with. If initialText's last substring of size numberOfLetters
-	 * doesn't appear as a key in Map, we generate no text and return only the initial text. 
-	 * @param numberOfLetters - the size of text to generate
-	 * @return the generated text
-	 */
-	public String generate(String initialText, int textLength) {
-		// Your code goes here
-        return "";
-	}
+        for (int i = 0; i + windowLength < text.length(); i++) {
+            String window = text.substring(i, i + windowLength);
+            char next = text.charAt(i + windowLength);
 
-    /** Returns a string representing the map of this language model. */
-	public String toString() {
-		StringBuilder str = new StringBuilder();
-		for (String key : CharDataMap.keySet()) {
-			List keyProbs = CharDataMap.get(key);
-			str.append(key + " : " + keyProbs + "\n");
-		}
-		return str.toString();
-	}
+            List probs = CharDataMap.get(window);
+            if (probs == null) {
+                probs = new List();
+                CharDataMap.put(window, probs);
+            }
+            probs.update(next);
+        }
 
-    public static void main(String[] args) {
-		// Your code goes here
+        for (List probs : CharDataMap.values()) {
+            calculateProbabilities(probs);
+        }
     }
+
+
+    public void calculateProbabilities(List probs) {
+        if (probs == null || probs.getSize() == 0) return;
+
+        CharData[] arr = probs.toArray();
+
+        int total = 0;
+        for (CharData cd : arr) total += cd.count;
+
+        double cumulative = 0.0;
+        for (int i = 0; i < arr.length; i++) {
+            arr[i].p = (double) arr[i].count / total;
+            cumulative += arr[i].p;
+            arr[i].cp = cumulative;
+        }
+        arr[arr.length - 1].cp = 1.0; // rounding guard
+    }
+
+    public char getRandomChar(List probs) {
+       if (probs == null || probs.getSize() == 0) {
+        throw new IllegalArgumentException("Probability list is empty");
+        }
+
+        double r = randomGenerator.nextDouble(); // r in [0,1)
+        CharData[] arr = probs.toArray();
+
+        for (CharData cd : arr) {
+            if (cd.cp > r) {
+                return cd.chr;
+            }
+        }
+
+        return arr[arr.length - 1].chr;
+    }
+
+    public String generate(String initialText, int textLength) {
+        if (initialText.length() < windowLength) return initialText;
+
+        StringBuilder out = new StringBuilder(initialText);
+        int targetLength = initialText.length() + textLength;
+
+        while (out.length() < targetLength) {
+            String window = out.substring(out.length() - windowLength);
+            List probs = CharDataMap.get(window);
+            if (probs == null) break;
+
+            out.append(getRandomChar(probs));
+        }
+        return out.toString();
+    }   
+
 }
