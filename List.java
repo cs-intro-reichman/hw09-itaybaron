@@ -83,20 +83,26 @@ public class List {
      *  given chr to the beginning of this list. */
     public void update(char chr) {
         
-        Node current = first;
+        if (first == null) {
+        first = new Node(new CharData(chr), null);
+        size++;
+        return;
+    }
 
-        // Search for existing CharData
+        Node current = first;
+        Node prev = null;
+
         while (current != null) {
             if (current.cp.chr == chr) {
-                current.cp.count++; // increment counter
+                current.cp.count++;
                 return;
             }
+            prev = current;
             current = current.next;
-            }
+        }
 
-        // IF not found
-        CharData newData = new CharData(chr);
-        first = new Node(newData, first);
+        // not found → append to END (IMPORTANT)
+        prev.next = new Node(new CharData(chr), null);
         size++;
     }
 
