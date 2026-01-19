@@ -46,27 +46,24 @@ public class LanguageModel {
 
         if (text.length() < windowLength + 1) return;
 
-        String window = text.substring(0, windowLength);
-
-        for (int i = windowLength; i < text.length(); i++) {
-            char c = text.charAt(i);
+        // Go RIGHT -> LEFT so addFirst/update produce the expected list order
+        for (int i = text.length() - windowLength - 1; i >= 0; i--) {
+            String window = text.substring(i, i + windowLength);
+            char next = text.charAt(i + windowLength);
 
             List probs = CharDataMap.get(window);
             if (probs == null) {
                 probs = new List();
                 CharDataMap.put(window, probs);
             }
-
-            probs.update(c);
-
-            window = window.substring(1) + c;
+            probs.update(next);
         }
 
+        // Compute probabilities for every list
         for (List probs : CharDataMap.values()) {
             calculateProbabilities(probs);
         }
     }
-
 
     public void calculateProbabilities(List probs) {
         if (probs == null || probs.getSize() == 0) return;
