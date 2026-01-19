@@ -43,13 +43,19 @@ public class List {
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
+        sb.append("(");
+        
         Node current = first;
 
         while (current != null) {
             sb.append(current.cp);
-            current = current.next;
+            if (current.next != null) {
+            sb.append(" ");
+        }
+        current = current.next;
         }
 
+        sb.append(")");
         return sb.toString();
     }
 

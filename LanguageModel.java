@@ -41,6 +41,7 @@ public class LanguageModel {
         try (Scanner sc = new Scanner(new File(fileName))) {
             while (sc.hasNextLine()) {
                 text.append(sc.nextLine());
+                text.append(" "); 
             }
         } catch (FileNotFoundException e) {
             throw new IllegalArgumentException("File not found: " + fileName);
@@ -128,7 +129,9 @@ public class LanguageModel {
             return initialText;
         }
 
-        while (result.length() < textLength) {
+        int targetLength = initialText.length() + textLength;
+
+        while (result.length() < targetLength) {
             int start = result.length() - windowLength;
             String window = result.substring(start, result.length());
 
@@ -144,7 +147,7 @@ public class LanguageModel {
 
         // Append to result
         result.append(nextChar);
-    }
+        }
 
         return result.toString();
     }
