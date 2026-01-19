@@ -44,7 +44,7 @@ public class LanguageModel {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
-        if (text.length() <= windowLength) return;
+        if (text.length() < windowLength + 1) return;
 
         String window = text.substring(0, windowLength);
 
@@ -67,7 +67,7 @@ public class LanguageModel {
         }
     }
 
-    // cp0=p0, cpi=cpi-1+pi (left-to-right)
+
     public void calculateProbabilities(List probs) {
         if (probs == null || probs.getSize() == 0) return;
 
@@ -86,11 +86,19 @@ public class LanguageModel {
     }
 
     public char getRandomChar(List probs) {
-        double r = randomGenerator.nextDouble();
-        CharData[] arr = probs.toArray();
-        for (CharData cd : arr) {
-            if (cd.cp > r) return cd.chr;   // spec: “greater than r”
+       if (probs == null || probs.getSize() == 0) {
+        throw new IllegalArgumentException("Probability list is empty");
         }
+
+        double r = randomGenerator.nextDouble(); // r in [0,1)
+        CharData[] arr = probs.toArray();
+
+        for (CharData cd : arr) {
+            if (cd.cp > r) {
+                return cd.chr;
+            }
+        }
+
         return arr[arr.length - 1].chr;
     }
 
