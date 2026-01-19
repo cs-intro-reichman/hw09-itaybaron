@@ -101,7 +101,6 @@ public class List {
             current = current.next;
         }
 
-        // not found → append to END (IMPORTANT)
         prev.next = new Node(new CharData(chr), null);
         size++;
     }
