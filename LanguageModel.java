@@ -69,9 +69,7 @@ public class LanguageModel {
 	// characters in the given list.
 	public void calculateProbabilities(List probs) {				
 		
-        if (probs == null || probs.getSize() == 0) {
-        return;
-        }
+        if (probs == null || probs.getSize() == 0) return;
 
         CharData[] arr = probs.toArray();
 
@@ -79,18 +77,16 @@ public class LanguageModel {
         for (CharData cd : arr) {
             total += cd.count;
         }
-        if (total == 0) {
-            return;
-        }
 
         double cumulative = 0.0;
-        for (CharData cd : arr) {
-            cd.p = (double) cd.count / total;
-            cumulative += cd.p;
-            cd.cp = cumulative;
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            arr[i].p = (double) arr[i].count / total;
+            cumulative += arr[i].p;
+            arr[i].cp = cumulative;
         }
 
-        arr[arr.length - 1].cp = 1.0;
+        arr[0].cp = arr[0].p;
     }
 
     // Returns a random character from the given probabilities list.
