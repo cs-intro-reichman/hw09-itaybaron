@@ -1,5 +1,8 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Scanner;
@@ -36,20 +39,29 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-		StringBuilder text = new StringBuilder();
-
-        try (Scanner sc = new Scanner(new File(fileName))) {
-            while (sc.hasNextLine()) {
-                text.append(sc.nextLine());
-                text.append(" "); 
-            }
-        } catch (FileNotFoundException e) {
+		
+        String text;
+        try {
+            text = Files.readString(Paths.get(fileName)); // reads file exactly, including newlines
+        } catch (IOException e) {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
-        // Not enough text to build any window->nextChar pairs
         if (text.length() <= windowLength) {
             return;
+        }
+
+        for (int i = 0; i + windowLength < text.length(); i++) {
+            String window = text.substring(i, i + windowLength);
+            char nextChr = text.charAt(i + windowLength);
+
+            List lst = CharDataMap.get(window);
+            if (lst == null) {
+                lst = new List();
+                CharDataMap.put(window, lst);
+            }
+
+            lst.update(nextChr);
         }
 
         // for every window, count the char that follows it
@@ -122,9 +134,9 @@ public class LanguageModel {
 	 * @return the generated text
 	 */
 	public String generate(String initialText, int textLength) {
-		StringBuilder result = new StringBuilder(initialText);
+	    
+        StringBuilder result = new StringBuilder(initialText);
 
-        // If too short, cannot generate
         if (initialText.length() < windowLength) {
             return initialText;
         }
@@ -132,21 +144,16 @@ public class LanguageModel {
         int targetLength = initialText.length() + textLength;
 
         while (result.length() < targetLength) {
-            int start = result.length() - windowLength;
-            String window = result.substring(start, result.length());
+            String window = result.substring(result.length() - windowLength);
 
-        // probabilities list
-        List probs = CharDataMap.get(window);
-        if (probs == null || probs.getSize() == 0) {
-            break; // cannot continue generation
-        }
+            List probs = CharDataMap.get(window);
+            if (probs == null || probs.getSize() == 0) {
+                break;
+            }
 
-        // Compute probabilities
-        calculateProbabilities(probs);
-        char nextChar = getRandomChar(probs);
-
-        // Append to result
-        result.append(nextChar);
+            calculateProbabilities(probs);
+            char nextChar = getRandomChar(probs);
+            result.append(nextChar);
         }
 
         return result.toString();
