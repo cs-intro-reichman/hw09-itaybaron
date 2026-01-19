@@ -39,7 +39,9 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-		
+        
+        CharDataMap.clear();
+
         String text;
         try {
             text = Files.readString(Paths.get(fileName));
@@ -47,7 +49,7 @@ public class LanguageModel {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
-        text = text.replace("\r\n", "\n");
+        text = text.replaceAll("\\s+$", "");
 
         if (text.length() <= windowLength) {
             return;
@@ -65,34 +67,6 @@ public class LanguageModel {
 
             lst.update(nextChr);
         }
-    }
-
-    // Computes and sets the probabilities (p and cp fields) of all the
-	// characters in the given list.
-	void calculateProbabilities(List probs) {				
-		
-        if (probs == null || probs.getSize() == 0) {
-        return;
-        }
-
-        CharData[] arr = probs.toArray();
-
-        int total = 0;
-        for (CharData cd : arr) {
-            total += cd.count;
-        }
-        if (total == 0) {
-            return;
-        }
-
-        double cumulative = 0.0;
-        for (CharData cd : arr) {
-            cd.p = (double) cd.count / total;
-            cumulative += cd.p;
-            cd.cp = cumulative;
-        }
-
-        arr[arr.length - 1].cp = 1.0;
     }
 
     // Returns a random character from the given probabilities list.
