@@ -48,8 +48,6 @@ public class LanguageModel {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
-        text = text.replace("\r\n", "\n");
-
         if (text.length() <= windowLength) return;
 
         for (int i = 0; i + windowLength < text.length(); i++) {
@@ -63,7 +61,7 @@ public class LanguageModel {
             }
             lst.update(nextChr);
         }
-    }
+}
 
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list.
