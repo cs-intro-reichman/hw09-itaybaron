@@ -18,13 +18,11 @@ public class List {
     }
 
     public CharData getFirst() {
-        if (first == null) {
-            throw new IllegalStateException("List is empty");
-        }
+        if (first == null) throw new IllegalStateException("List is empty");
         return first.cp;
     }
 
-    /** Adds to the BEGINNING (this is REQUIRED by tests) */
+    // Adds to the beginning (required)
     public void addFirst(char chr) {
         first = new Node(new CharData(chr), first);
         size++;
@@ -44,16 +42,16 @@ public class List {
 
     public int indexOf(char chr) {
         Node current = first;
-        int index = 0;
+        int i = 0;
         while (current != null) {
-            if (current.cp.chr == chr) return index;
+            if (current.cp.chr == chr) return i;
             current = current.next;
-            index++;
+            i++;
         }
         return -1;
     }
 
-    /** Increment if exists, otherwise ADD TO FRONT */
+    // If exists increment, else addFirst (required)
     public void update(char chr) {
         Node current = first;
         while (current != null) {
@@ -63,7 +61,7 @@ public class List {
             }
             current = current.next;
         }
-        addFirst(chr); // required behavior
+        addFirst(chr);
     }
 
     public boolean remove(char chr) {
@@ -88,18 +86,11 @@ public class List {
     }
 
     public CharData get(int index) {
-        if (index < 0 || index >= size) {
-            throw new IndexOutOfBoundsException();
-        }
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
 
         Node current = first;
-        int i = 0;
-        while (current != null) {
-            if (i == index) return current.cp;
-            current = current.next;
-            i++;
-        }
-        throw new IndexOutOfBoundsException();
+        for (int i = 0; i < index; i++) current = current.next;
+        return current.cp;
     }
 
     public CharData[] toArray() {
@@ -114,11 +105,9 @@ public class List {
     }
 
     public ListIterator listIterator(int index) {
-        if (size == 0) return null;
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
         Node current = first;
-        for (int i = 0; i < index; i++) {
-            current = current.next;
-        }
+        for (int i = 0; i < index; i++) current = current.next;
         return new ListIterator(current);
     }
 }

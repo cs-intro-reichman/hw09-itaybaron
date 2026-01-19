@@ -22,7 +22,7 @@ public class LanguageModel {
     /** Constructs a language model with the given window length and a given
      *  seed value. Generating texts from this model multiple times with the 
      *  same seed value will produce the same random texts. Good for debugging. */
-    public LanguageModel(int windowLength, int seed) {
+     public LanguageModel(int windowLength, int seed) {
         this.windowLength = windowLength;
         randomGenerator = new Random(seed);
         CharDataMap = new HashMap<>();
@@ -41,25 +41,33 @@ public class LanguageModel {
         try {
             text = Files.readString(Paths.get(fileName));
         } catch (IOException e) {
-            throw new IllegalArgumentException("File not found");
+            throw new IllegalArgumentException("File not found: " + fileName);
         }
 
         if (text.length() <= windowLength) return;
 
-        for (int i = 0; i + windowLength < text.length(); i++) {
-            String window = text.substring(i, i + windowLength);
-            char next = text.charAt(i + windowLength);
+        String window = text.substring(0, windowLength);
 
-            List list = CharDataMap.get(window);
-            if (list == null) {
-                list = new List();
-                CharDataMap.put(window, list);
+        for (int i = windowLength; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            List probs = CharDataMap.get(window);
+            if (probs == null) {
+                probs = new List();
+                CharDataMap.put(window, probs);
             }
-            list.update(next);
+
+            probs.update(c);
+
+            window = window.substring(1) + c;
+        }
+
+        for (List probs : CharDataMap.values()) {
+            calculateProbabilities(probs);
         }
     }
 
-    /** LEFT → RIGHT cumulative probability */
+    // cp0=p0, cpi=cpi-1+pi (left-to-right)
     public void calculateProbabilities(List probs) {
         if (probs == null || probs.getSize() == 0) return;
 
@@ -74,32 +82,29 @@ public class LanguageModel {
             cumulative += arr[i].p;
             arr[i].cp = cumulative;
         }
-
-        arr[arr.length - 1].cp = 1.0;
+        arr[arr.length - 1].cp = 1.0; // rounding guard
     }
 
     public char getRandomChar(List probs) {
         double r = randomGenerator.nextDouble();
-        for (CharData cd : probs.toArray()) {
-            if (r <= cd.cp) return cd.chr;
+        CharData[] arr = probs.toArray();
+        for (CharData cd : arr) {
+            if (cd.cp > r) return cd.chr;   // spec: “greater than r”
         }
-        return probs.toArray()[probs.getSize() - 1].chr;
+        return arr[arr.length - 1].chr;
     }
 
     public String generate(String initialText, int textLength) {
         if (initialText.length() < windowLength) return initialText;
 
-        StringBuilder result = new StringBuilder(initialText);
-        int target = initialText.length() + textLength;
+        StringBuilder out = new StringBuilder(initialText);
 
-        while (result.length() < target) {
-            String window = result.substring(result.length() - windowLength);
+        while (out.length() < textLength) {
+            String window = out.substring(out.length() - windowLength);
             List probs = CharDataMap.get(window);
             if (probs == null) break;
-
-            calculateProbabilities(probs);
-            result.append(getRandomChar(probs));
+            out.append(getRandomChar(probs));
         }
-        return result.toString();
+        return out.toString();
     }
 }
