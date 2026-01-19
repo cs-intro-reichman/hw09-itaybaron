@@ -46,8 +46,7 @@ public class LanguageModel {
 
         if (text.length() < windowLength + 1) return;
 
-        // Go RIGHT -> LEFT so addFirst/update produce the expected list order
-        for (int i = text.length() - windowLength - 1; i >= 0; i--) {
+        for (int i = 0; i + windowLength < text.length(); i++) {
             String window = text.substring(i, i + windowLength);
             char next = text.charAt(i + windowLength);
 
@@ -59,11 +58,11 @@ public class LanguageModel {
             probs.update(next);
         }
 
-        // Compute probabilities for every list
         for (List probs : CharDataMap.values()) {
             calculateProbabilities(probs);
         }
     }
+
 
     public void calculateProbabilities(List probs) {
         if (probs == null || probs.getSize() == 0) return;
@@ -103,13 +102,16 @@ public class LanguageModel {
         if (initialText.length() < windowLength) return initialText;
 
         StringBuilder out = new StringBuilder(initialText);
+        int targetLength = initialText.length() + textLength;
 
-        while (out.length() < textLength) {
+        while (out.length() < targetLength) {
             String window = out.substring(out.length() - windowLength);
             List probs = CharDataMap.get(window);
             if (probs == null) break;
+
             out.append(getRandomChar(probs));
         }
         return out.toString();
-    }
+    }   
+
 }
