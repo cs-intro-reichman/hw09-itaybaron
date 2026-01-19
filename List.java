@@ -33,9 +33,17 @@ public class List {
 
     /** GIVE Adds a CharData object with the given character to the beginning of this list. */
     public void addFirst(char chr) {
-        
         CharData newData = new CharData(chr);
-        first = new Node(newData, first);
+
+        if (first == null) {
+            first = new Node(newData, null);
+        } else {
+            Node current = first;
+            while (current.next != null) {
+                current = current.next;
+            }
+            current.next = new Node(newData, null);
+        }
         size++;
     }
     
