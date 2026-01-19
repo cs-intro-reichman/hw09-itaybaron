@@ -42,10 +42,12 @@ public class LanguageModel {
 		
         String text;
         try {
-            text = Files.readString(Paths.get(fileName)); // reads file exactly, including newlines
+            text = Files.readString(Paths.get(fileName));
         } catch (IOException e) {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
+
+        text = text.replace("\r\n", "\n");
 
         if (text.length() <= windowLength) {
             return;
@@ -62,20 +64,6 @@ public class LanguageModel {
             }
 
             lst.update(nextChr);
-        }
-
-        // for every window, count the char that follows it
-        for (int i = 0; i + windowLength < text.length(); i++) {
-            String window = text.substring(i, i + windowLength);
-            char nextChr = text.charAt(i + windowLength);
-
-            List lst = CharDataMap.get(window);
-            if (lst == null) {
-                lst = new List();
-                CharDataMap.put(window, lst);
-            }
-
-            lst.update(nextChr); // increments if exists, else adds to front
         }
     }
 
