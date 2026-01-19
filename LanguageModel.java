@@ -39,8 +39,7 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-        
-        CharDataMap.clear();   // required
+        CharDataMap.clear();
 
         String text;
         try {
@@ -49,9 +48,9 @@ public class LanguageModel {
             throw new IllegalArgumentException("File not found: " + fileName);
         }
 
-        if (text.length() <= windowLength) {
-            return;
-        }
+        text = text.replace("\r\n", "\n");
+
+        if (text.length() <= windowLength) return;
 
         for (int i = 0; i + windowLength < text.length(); i++) {
             String window = text.substring(i, i + windowLength);
@@ -62,7 +61,6 @@ public class LanguageModel {
                 lst = new List();
                 CharDataMap.put(window, lst);
             }
-
             lst.update(nextChr);
         }
     }
